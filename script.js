@@ -1,57 +1,221 @@
-/* Get references to DOM elements */
-const categoryFilter = document.getElementById("categoryFilter");
-const productsContainer = document.getElementById("productsContainer");
-const chatForm = document.getElementById("chatForm");
-const chatWindow = document.getElementById("chatWindow");
+// script.js
 
-/* Show initial placeholder until user selects a category */
-productsContainer.innerHTML = `
-  <div class="placeholder-message">
-    Select a category to view products
-  </div>
-`;
+// State
+let products = [];
+const selected = new Map();
+const chatHistory = [];
 
-/* Load product data from JSON file */
+// Elements\const productsContainer   = document.getElementById('productsContainer');
+const categoryFilter      = document.getElementById('categoryFilter');
+const productSearch       = document.getElementById('productSearch');
+const rtlToggle           = document.getElementById('rtlToggle');
+const selectedList        = document.getElementById('selectedProductsList');
+const clearBtn            = document.getElementById('clearSelections');
+const generateBtn         = document.getElementById('generateRoutine');
+const descriptionModal    = document.getElementById('descriptionModal');
+const modalName           = document.getElementById('modalProductName');
+const modalDesc           = document.getElementById('modalProductDesc');
+const closeModalBtn       = document.getElementById('closeModal');
+const chatWindow          = document.getElementById('chatWindow');
+const chatForm            = document.getElementById('chatForm');
+const userInput           = document.getElementById('userInput');
+const sendBtn             = document.getElementById('sendBtn');
+
+// Load products from JSON
 async function loadProducts() {
-  const response = await fetch("products.json");
-  const data = await response.json();
-  return data.products;
+  try {
+    const res  = await fetch('products.json');
+    const data = await res.json();
+    products    = data.products || [];
+  } catch (err) {
+    console.error('Failed to load products:', err);
+    chatWindow.innerHTML = `<p style=\"color:red;\">Error loading products: ${err.message}</p>`;
+    return;
+  }
+
+  restoreSelections();
+  renderProducts();
+  renderSelected();
 }
 
-/* Create HTML for displaying product cards */
-function displayProducts(products) {
-  productsContainer.innerHTML = products
-    .map(
-      (product) => `
-    <div class="product-card">
-      <img src="${product.image}" alt="${product.name}">
-      <div class="product-info">
-        <h3>${product.name}</h3>
-        <p>${product.brand}</p>
-      </div>
-    </div>
-  `
-    )
-    .join("");
+// Render product grid
+function renderProducts() {
+  productsContainer.innerHTML = '';
+  const category  = categoryFilter.value;
+  const searchTerm = productSearch.value.trim().toLowerCase();
+
+  products
+    .filter(p => (!category || p.category === category))
+    .filter(p => p.name.toLowerCase().includes(searchTerm))
+    .forEach(p => {
+      const card = document.createElement('div');
+      card.className = 'product-card';
+      if (selected.has(p.id)) card.classList.add('selected');
+
+      card.innerHTML = `
+        <img src="${p.image}" alt="${p.name}" />
+        <h4>${p.name}</h4>
+        <button class="info-btn" title="View description">
+          <i class="fa-solid fa-info"></i>
+        </button>
+      `;
+
+      // Click to select/unselect
+      card.addEventListener('click', e => {
+        if (e.target.closest('.info-btn')) return;
+        toggleSelect(p.id);
+      });
+
+      // Show description
+      card.querySelector('.info-btn')
+          .addEventListener('click', e => {
+            e.stopPropagation();
+            openModal(p);
+          });
+
+      productsContainer.append(card);
+    });
 }
 
-/* Filter and display products when category changes */
-categoryFilter.addEventListener("change", async (e) => {
-  const products = await loadProducts();
-  const selectedCategory = e.target.value;
+// Toggle product selection
+function toggleSelect(id) {
+  if (selected.has(id)) selected.delete(id);
+  else {
+    const prod = products.find(p => p.id === id);
+    if (prod) selected.set(id, prod);
+  }
+  saveSelections();
+  renderProducts();
+  renderSelected();
+}
 
-  /* filter() creates a new array containing only products 
-     where the category matches what the user selected */
-  const filteredProducts = products.filter(
-    (product) => product.category === selectedCategory
-  );
+// Render selected products list
+function renderSelected() {
+  selectedList.innerHTML = '';
+  selected.forEach((p, id) => {
+    const item = document.createElement('div');
+    item.className = 'selected-item';
+    item.innerHTML = `
+      <span>${p.name}</span>
+      <button title="Remove">
+        <i class="fa-solid fa-times"></i>
+      </button>
+    `;
+    item.querySelector('button').addEventListener('click', () => toggleSelect(id));
+    selectedList.append(item);
+  });
+}
 
-  displayProducts(filteredProducts);
+// Clear all selections
+clearBtn.addEventListener('click', () => {
+  selected.clear();
+  saveSelections();
+  renderProducts();
+  renderSelected();
 });
 
-/* Chat form submission handler - placeholder for OpenAI integration */
-chatForm.addEventListener("submit", (e) => {
+// LocalStorage persistence
+function saveSelections() {
+  localStorage.setItem('lorealSelected', JSON.stringify([...selected.keys()]));
+}
+function restoreSelections() {
+  const saved = JSON.parse(localStorage.getItem('lorealSelected') || '[]');
+  saved.forEach(id => {
+    const prod = products.find(p => p.id === id);
+    if (prod) selected.set(id, prod);
+  });
+}
+
+// Filters & search events
+categoryFilter.addEventListener('change', renderProducts);
+productSearch.addEventListener('input', renderProducts);
+
+// RTL toggle
+rtlToggle.addEventListener('click', () => {
+  const isRtl = rtlToggle.getAttribute('aria-pressed') === 'true';
+  document.documentElement.setAttribute('dir', isRtl ? 'ltr' : 'rtl');
+  rtlToggle.setAttribute('aria-pressed', String(!isRtl));
+});
+
+// Modal functions
+function openModal(p) {
+  modalName.textContent = p.name;
+  modalDesc.textContent = p.description;
+  descriptionModal.classList.remove('hidden');
+}
+closeModalBtn.addEventListener('click', () => {
+  descriptionModal.classList.add('hidden');
+});
+
+// Generate AI routine with error handling
+generateBtn.addEventListener('click', async () => {
+  if (!selected.size) {
+    alert('Please select at least one product.');
+    return;
+  }
+  generateBtn.disabled = true;
+  chatWindow.innerHTML = '<p>Generating your routine…</p>';
+
+  try {
+    const payload = {
+      products: [...selected.values()].map(p => ({
+        name: p.name,
+        brand: p.brand,
+        category: p.category,
+        description: p.description
+      }))
+    };
+
+    const response = await fetch('/api/routine', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    if (!response.ok) throw new Error(`Server error: ${response.status}`);
+    const data = await response.json();
+
+    chatWindow.innerHTML = `<p>${data.routine}</p>`;
+    chatHistory.push({ role: 'assistant', content: data.routine });
+
+    // enable chat input
+    userInput.disabled = false;
+    sendBtn.disabled  = false;
+  } catch (err) {
+    console.error('Routine generation failed:', err);
+    chatWindow.innerHTML = `<p style=\"color:red;\">Error: ${err.message}</p>`;
+  } finally {
+    generateBtn.disabled = false;
+  }
+});
+
+// Chat follow-up
+chatForm.addEventListener('submit', async e => {
   e.preventDefault();
+  const question = userInput.value.trim();
+  if (!question) return;
 
-  chatWindow.innerHTML = "Connect to the OpenAI API for a response!";
+  chatWindow.innerHTML += `<p><strong>You:</strong> ${question}</p>`;
+  chatHistory.push({ role: 'user', content: question });
+  userInput.value = '';
+
+  try {
+    const response = await fetch('/api/routine', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ history: chatHistory })
+    });
+    if (!response.ok) throw new Error(`Server: ${response.status}`);
+    const data = await response.json();
+
+    chatWindow.innerHTML += `<p><strong>Bot:</strong> ${data.reply}</p>`;
+    chatHistory.push({ role: 'assistant', content: data.reply });
+    chatWindow.scrollTop = chatWindow.scrollHeight;
+  } catch (err) {
+    console.error('Chat follow-up failed:', err);
+    chatWindow.innerHTML += `<p style=\"color:red;\">Error: ${err.message}</p>`;
+  }
 });
+
+// Initialize loading
+loadProducts();

@@ -1,255 +1,358 @@
-/* —— basic reset —— */
+/* style.css */
+:root {
+  --color-primary: #ff003b;
+  --color-accent: #e3a535;
+  --color-background: #f5f5f7;
+  --color-surface: #ffffff;
+  --color-text: #1c1c1e;
+  --color-muted: #8e8e93;
+  --radius: 12px;
+  --shadow: 0 4px 16px rgba(0,0,0,0.1);
+  --font-family: 'Montserrat', sans-serif;
+  --transition: 0.25s;
+}
+
 * {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
 }
 
-/* —— body + fonts —— */
 body {
-  font-family: "Montserrat", Arial, Helvetica, sans-serif;
-  color: #333;
-  display: flex;
-  justify-content: center;
+  font-family: var(--font-family);
+  background: var(--color-background);
+  color: var(--color-text);
+  line-height: 1.5;
 }
 
 .page-wrapper {
-  width: 90%;
-  max-width: 900px;
+  display: grid;
+  grid-template-areas:
+    "header header"
+    "main sidebar"
+    "chat chat";
+  grid-template-columns: 1fr 320px;
+  grid-template-rows: auto 1fr auto;
+  gap: 24px;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px;
 }
 
-/* header */
 .site-header {
-  text-align: center;
-  padding-top: 50px;
-  padding-bottom: 10px;
+  grid-area: header;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 16px;
 }
 
 .logo {
-  width: 250px;
-  margin-bottom: 15px;
+  height: 32px;
 }
 
 .site-title {
-  font-size: 22px;
-  font-weight: 500;
-  margin-bottom: 10px;
+  font-size: 1.75rem;
+  font-weight: 600;
+  color: var(--color-text);
 }
 
-/* category filter */
-.search-section {
-  margin: 30px 0;
+.controls {
   display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
-.search-section select {
-  width: 100%;
-  padding: 16px;
-  font-size: 18px;
-  border: 2px solid #000;
-  border-radius: 8px;
-  cursor: pointer;
-  background-color: white;
-  font-weight: 500;
+.controls input[type="search"] {
+  padding: 8px 12px;
+  border: 1px solid var(--color-background);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  width: 200px;
+  transition: border var(--transition);
 }
 
-.search-section select:focus {
+.controls input[type="search"]:focus {
   outline: none;
-  border-color: #666;
+  border-color: var(--color-primary);
 }
 
-/* chat section */
+#rtlToggle {
+  padding: 8px 12px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-muted);
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: background var(--transition), border var(--transition);
+}
+
+#rtlToggle[aria-pressed="true"] {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: #fff;
+}
+
+.main-content {
+  grid-area: main;
+}
+
+#categoryFilter {
+  width: 100%;
+  padding: 12px;
+  font-size: 1rem;
+  border: none;
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  box-shadow: var(--shadow);
+}
+
+.products-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 24px;
+  margin-top: 16px;
+}
+
+.product-card {
+  position: relative;
+  background: var(--color-surface);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 16px;
+  text-align: center;
+  cursor: pointer;
+  transition: transform var(--transition), box-shadow var(--transition);
+}
+
+.product-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+}
+
+.product-card.selected {
+  outline: 2px solid var(--color-primary);
+}
+
+.product-card img {
+  width: 100%;
+  height: auto;
+  border-radius: var(--radius);
+  object-fit: cover;
+}
+
+.product-card h4 {
+  margin-top: 12px;
+  font-size: 1rem;
+  color: var(--color-text);
+}
+
+.info-btn {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 32px;
+  height: 32px;
+  background: rgba(255,255,255,0.8);
+  border: none;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text);
+  cursor: pointer;
+  transition: background var(--transition);
+}
+
+.info-btn:hover {
+  background: var(--color-surface);
+}
+
+.selected-products {
+  grid-area: sidebar;
+  background: var(--color-surface);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+}
+
+.selected-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.selected-header h2 {
+  font-size: 1.25rem;
+  color: var(--color-text);
+}
+
+#clearSelections {
+  background: none;
+  border: none;
+  color: var(--color-primary);
+  cursor: pointer;
+  font-size: 1rem;
+  transition: color var(--transition);
+}
+
+#clearSelections:hover {
+  color: var(--color-text);
+}
+
+.selected-list {
+  flex-grow: 1;
+  margin: 16px 0;
+  overflow-y: auto;
+}
+
+.selected-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--color-background);
+}
+
+.selected-item:last-child {
+  border-bottom: none;
+}
+
+.selected-item button {
+  background: none;
+  border: none;
+  color: var(--color-muted);
+  cursor: pointer;
+  font-size: 1.25rem;
+  transition: color var(--transition);
+}
+
+.selected-item button:hover {
+  color: var(--color-primary);
+}
+
+.generate-btn {
+  padding: 12px;
+  margin-top: 8px;
+  background: var(--color-primary);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius);
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background var(--transition);
+}
+
+.generate-btn:hover {
+  background: #e6002e;
+}
+
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0,0,0,0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--transition);
+}
+
+.modal:not(.hidden) {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.modal-content {
+  background: var(--color-surface);
+  border-radius: var(--radius);
+  padding: 24px;
+  max-width: 500px;
+  width: 100%;
+  box-shadow: var(--shadow);
+  position: relative;
+}
+
+.modal-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: var(--color-muted);
+  cursor: pointer;
+  transition: color var(--transition);
+}
+
+.modal-close:hover {
+  color: var(--color-text);
+}
+
 .chatbox {
-  margin: 40px 0;
-  border: 2px solid #000;
-  border-radius: 8px;
-  padding: 26px;
-}
-
-.chatbox h2 {
-  font-size: 20px;
-  margin-bottom: 20px;
+  grid-area: chat;
+  background: var(--color-surface);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 16px;
 }
 
 .chat-window {
-  padding: 20px;
-  font-size: 18px;
-  line-height: 1.5;
-  height: 250px;
+  height: 200px;
   overflow-y: auto;
-  background: #fafafa;
-  margin-bottom: 20px;
+  background: var(--color-background);
+  border: none;
+  border-radius: var(--radius);
+  padding: 16px;
 }
 
-/* placeholder message */
-.placeholder-message {
-  width: 100%;
-  text-align: center;
-  padding: 40px;
-  color: #666;
-  font-size: 18px;
+.chat-window p {
+  margin-bottom: 12px;
 }
 
-/* input row */
 .chat-form {
   display: flex;
   gap: 12px;
-  margin-top: 16px;
+  margin-top: 12px;
 }
 
 .chat-form input {
   flex: 1;
   padding: 12px;
-  font-size: 18px;
-  border: none;
-  border-bottom: 2px solid #ccc;
-  background: transparent;
-}
-
-.chat-form input:focus {
-  outline: none;
-  border-bottom-color: #000;
+  border: 1px solid var(--color-background);
+  border-radius: var(--radius);
 }
 
 .chat-form button {
-  font-size: 18px;
-  background: #000;
-  color: #fff;
+  background: var(--color-accent);
   border: none;
-  padding: 12px;
-  width: 48px;
-  height: 48px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  padding: 12px 16px;
+  border-radius: var(--radius);
+  color: #fff;
   cursor: pointer;
-  transition: background 0.3s;
+  transition: background var(--transition);
 }
 
 .chat-form button:hover {
-  background: #666666;
+  background: #d2a032;
 }
 
-.chat-form button:focus {
-  outline: 2px solid #000;
-  outline-offset: 2px;
+/* RTL Support */
+html[dir="rtl"] .page-wrapper {
+  direction: rtl;
+  grid-template-areas:
+    "header header"
+    "sidebar main"
+    "chat chat";
+}
+html[dir="rtl"] .site-header,
+html[dir="rtl"] .controls,
+html[dir="rtl"] .chat-form {
+  flex-direction: row-reverse;
 }
 
-/* visually hidden */
-.visually-hidden {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
-}
-
-/* footer */
-.site-footer {
-  margin: 60px 0 40px;
-  text-align: center;
-  font-size: 14px;
-  color: #666;
-}
-
-.site-footer nav {
-  margin-top: 12px;
-}
-
-.site-footer a {
-  margin: 0 8px;
-  color: #000;
-  text-decoration: none;
-}
-
-.site-footer a:hover {
-  color: #666666;
-}
-
-/* products grid */
-.products-grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 20px;
-  margin: 30px 0;
-}
-
-.product-card {
-  flex: 0 1 calc(33.333% - 14px);
-  border: 1px solid #ccc;
-  padding: 15px;
-  border-radius: 4px;
-  display: flex;
-  gap: 15px;
-  min-height: 160px;
-}
-
-.product-card img {
-  width: 110px;
-  height: 110px;
-  object-fit: contain;
-  flex-shrink: 0;
-}
-
-.product-card .product-info {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  min-height: 110px;
-}
-
-.product-card h3 {
-  font-size: 16px;
-  margin-bottom: 8px;
-}
-
-.product-card p {
-  font-size: 14px;
-  color: #666;
-}
-
-/* selected products */
-.selected-products {
-  margin: 40px 0;
-  padding: 20px;
-  border: 2px solid #000;
-  border-radius: 8px;
-}
-
-.selected-products h2 {
-  font-size: 20px;
-  margin-bottom: 20px;
-}
-
-#selectedProductsList {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-}
-
-.generate-btn {
-  width: 100%;
-  margin-top: 20px;
-  padding: 16px;
-  font-size: 18px;
-  font-weight: 500;
-  color: #fff;
-  background: #000;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: background 0.3s;
-}
-
-.generate-btn:hover {
-  background: #666;
-}
-
-.generate-btn i {
-  margin-right: 8px;
-}
