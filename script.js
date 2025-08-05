@@ -1,11 +1,15 @@
 // script.js
 
+// API endpoint (Cloudflare Worker or Pages Function URL)
+const API_ENDPOINT = 'https://uiriamuloreal.xieyuuuu.workers.dev/api/routine';
+
 // State
 let products = [];
 const selected = new Map();
 const chatHistory = [];
 
-// Elements\const productsContainer   = document.getElementById('productsContainer');
+// Elements
+const productsContainer   = document.getElementById('productsContainer');
 const categoryFilter      = document.getElementById('categoryFilter');
 const productSearch       = document.getElementById('productSearch');
 const rtlToggle           = document.getElementById('rtlToggle');
@@ -29,10 +33,9 @@ async function loadProducts() {
     products    = data.products || [];
   } catch (err) {
     console.error('Failed to load products:', err);
-    chatWindow.innerHTML = `<p style=\"color:red;\">Error loading products: ${err.message}</p>`;
+    chatWindow.innerHTML = `<p style="color:red;">Error loading products: ${err.message}</p>`;
     return;
   }
-
   restoreSelections();
   renderProducts();
   renderSelected();
@@ -59,25 +62,19 @@ function renderProducts() {
           <i class="fa-solid fa-info"></i>
         </button>
       `;
-
-      // Click to select/unselect
       card.addEventListener('click', e => {
         if (e.target.closest('.info-btn')) return;
         toggleSelect(p.id);
       });
-
-      // Show description
-      card.querySelector('.info-btn')
-          .addEventListener('click', e => {
-            e.stopPropagation();
-            openModal(p);
-          });
-
+      card.querySelector('.info-btn').addEventListener('click', e => {
+        e.stopPropagation();
+        openModal(p);
+      });
       productsContainer.append(card);
     });
 }
 
-// Toggle product selection
+// Toggle selection
 function toggleSelect(id) {
   if (selected.has(id)) selected.delete(id);
   else {
@@ -89,7 +86,7 @@ function toggleSelect(id) {
   renderSelected();
 }
 
-// Render selected products list
+// Render selected list
 function renderSelected() {
   selectedList.innerHTML = '';
   selected.forEach((p, id) => {
@@ -106,7 +103,7 @@ function renderSelected() {
   });
 }
 
-// Clear all selections
+// Clear all
 clearBtn.addEventListener('click', () => {
   selected.clear();
   saveSelections();
@@ -114,7 +111,7 @@ clearBtn.addEventListener('click', () => {
   renderSelected();
 });
 
-// LocalStorage persistence
+// Persistence
 function saveSelections() {
   localStorage.setItem('lorealSelected', JSON.stringify([...selected.keys()]));
 }
@@ -126,7 +123,7 @@ function restoreSelections() {
   });
 }
 
-// Filters & search events
+// Filters
 categoryFilter.addEventListener('change', renderProducts);
 productSearch.addEventListener('input', renderProducts);
 
@@ -137,7 +134,7 @@ rtlToggle.addEventListener('click', () => {
   rtlToggle.setAttribute('aria-pressed', String(!isRtl));
 });
 
-// Modal functions
+// Modal
 function openModal(p) {
   modalName.textContent = p.name;
   modalDesc.textContent = p.description;
@@ -147,43 +144,22 @@ closeModalBtn.addEventListener('click', () => {
   descriptionModal.classList.add('hidden');
 });
 
-// Generate AI routine with error handling
+// Generate routine
 generateBtn.addEventListener('click', async () => {
-  if (!selected.size) {
-    alert('Please select at least one product.');
-    return;
-  }
+  if (!selected.size) { alert('Please select at least one product.'); return; }
   generateBtn.disabled = true;
   chatWindow.innerHTML = '<p>Generating your routine…</p>';
-
   try {
-    const payload = {
-      products: [...selected.values()].map(p => ({
-        name: p.name,
-        brand: p.brand,
-        category: p.category,
-        description: p.description
-      }))
-    };
-
-    const response = await fetch('/api/routine', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    });
-
-    if (!response.ok) throw new Error(`Server error: ${response.status}`);
-    const data = await response.json();
-
+    const payload = { products: [...selected.values()].map(p => ({ name: p.name, brand: p.brand, category: p.category, description: p.description })) };
+    const res = await fetch(API_ENDPOINT, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+    if (!res.ok) throw new Error(`Server error ${res.status}`);
+    const data = await res.json();
     chatWindow.innerHTML = `<p>${data.routine}</p>`;
     chatHistory.push({ role: 'assistant', content: data.routine });
-
-    // enable chat input
-    userInput.disabled = false;
-    sendBtn.disabled  = false;
+    userInput.disabled = false; sendBtn.disabled = false;
   } catch (err) {
-    console.error('Routine generation failed:', err);
-    chatWindow.innerHTML = `<p style=\"color:red;\">Error: ${err.message}</p>`;
+    console.error(err);
+    chatWindow.innerHTML = `<p style="color:red;">Error: ${err.message}</p>`;
   } finally {
     generateBtn.disabled = false;
   }
@@ -192,30 +168,21 @@ generateBtn.addEventListener('click', async () => {
 // Chat follow-up
 chatForm.addEventListener('submit', async e => {
   e.preventDefault();
-  const question = userInput.value.trim();
-  if (!question) return;
-
+  const question = userInput.value.trim(); if (!question) return;
   chatWindow.innerHTML += `<p><strong>You:</strong> ${question}</p>`;
-  chatHistory.push({ role: 'user', content: question });
-  userInput.value = '';
-
+  chatHistory.push({ role: 'user', content: question }); userInput.value = '';
   try {
-    const response = await fetch('/api/routine', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ history: chatHistory })
-    });
-    if (!response.ok) throw new Error(`Server: ${response.status}`);
-    const data = await response.json();
-
+    const res = await fetch(API_ENDPOINT, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ history: chatHistory }) });
+    if (!res.ok) throw new Error(`Server error ${res.status}`);
+    const data = await res.json();
     chatWindow.innerHTML += `<p><strong>Bot:</strong> ${data.reply}</p>`;
     chatHistory.push({ role: 'assistant', content: data.reply });
     chatWindow.scrollTop = chatWindow.scrollHeight;
   } catch (err) {
-    console.error('Chat follow-up failed:', err);
-    chatWindow.innerHTML += `<p style=\"color:red;\">Error: ${err.message}</p>`;
+    console.error(err);
+    chatWindow.innerHTML += `<p style="color:red;">Error: ${err.message}</p>`;
   }
 });
 
-// Initialize loading
+// Initialize
 loadProducts();
